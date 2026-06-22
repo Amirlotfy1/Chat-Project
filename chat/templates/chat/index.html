@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>پروژه چت</title>
+    <style>
+        * { box-sizing: border-box; font-family: 'Segoe UI', Tahoma, sans-serif; }
+        body { background: #eef1f4; margin: 0; padding: 0; display: flex; justify-content: center; }
+        .app-container { width: 100%; max-width: 480px; background: white; min-height: 100vh; display: flex; flex-direction: column; box-shadow: 0 0 15px rgba(0,0,0,0.05); }
+        
+        .my-profile-section { background: #0088cc; color: white; padding: 20px 15px; border-bottom-left-radius: 20px; border-bottom-right-radius: 20px; }
+        .prof-row { display: flex; align-items: center; gap: 12px; }
+        .prof-row img { width: 55px; height: 55px; border-radius: 50%; object-fit: cover; border: 2px solid white; }
+        .prof-text h4 { margin: 0; font-size: 16px; }
+        .prof-text p { margin: 3px 0 0 0; font-size: 12px; opacity: 0.8; }
+        
+        .upload-form { margin-top: 15px; background: rgba(255,255,255,0.15); padding: 10px; border-radius: 10px; display: flex; flex-direction: column; gap: 8px; }
+        .upload-form input[type="text"] { padding: 6px; border: none; border-radius: 5px; outline: none; font-size: 13px; }
+        .upload-form button { background: #28a745; color: white; border: none; padding: 6px; border-radius: 5px; cursor: pointer; font-weight: bold; }
+
+        .search-area, .group-area { padding: 15px 10px; border-bottom: 1px solid #f0f0f0; }
+        .input-grp { display: flex; gap: 5px; }
+        .input-grp input { flex: 1; padding: 10px; border: 1px solid #ddd; border-radius: 8px; outline: none; }
+        .input-grp button { background: #0088cc; color: white; border: none; padding: 0 15px; border-radius: 8px; cursor: pointer; }
+
+        .chat-list-container { flex: 1; padding: 10px; overflow-y: auto; }
+        .section-title { font-size: 13px; color: #888; margin: 10px 5px; font-weight: bold; }
+        
+        .chat-card { display: flex; align-items: center; justify-content: space-between; padding: 12px; background: #fdfdfd; border-radius: 12px; border: 1px solid #f4f4f4; margin-bottom: 8px; text-decoration: none; color: #333; }
+        .chat-card:hover { background: #f7f9fa; }
+        .card-main { display: flex; align-items: center; gap: 12px; }
+        .card-main img { width: 45px; height: 45px; border-radius: 50%; object-fit: cover; }
+        .badge { font-size: 11px; padding: 2px 8px; border-radius: 10px; background: #e3f2fd; color: #0d47a1; font-weight: bold; }
+        .del-btn { color: #dc3545; font-size: 11px; text-decoration: none; padding: 5px; }
+    </style>
+</head>
+<body>
+
+<div class="app-container">
+    <div class="my-profile-section">
+        <div class="prof-row">
+            <img src="{{ request.user.profile.avatar.url }}" alt="آواتار">
+            <div class="prof-text">
+                <h4>{{ request.user.username }}</h4>
+                <p>{{ request.user.profile.bio }}</p>
+            </div>
+        </div>
+        
+        <form method="post" enctype="multipart/form-data" class="upload-form">
+            {% csrf_token %}
+            <input type="file" name="avatar" accept="image/*">
+            <input type="text" name="bio" placeholder="تغییر بیوگرافی...">
+            <button type="submit" name="update_profile">ذخیره تغییرات پروفایل</button>
+        </form>
+    </div>
+
+    <div class="search-area">
+        <form method="get" class="input-grp">
+            <input type="text" name="search" placeholder="🔍 جستجوی آیدی کاربر..." value="{{ search_query }}">
+            <button type="submit">یافتن</button>
+        </form>
+        {% if search_results %}
+            <div style="margin-top:10px;">
+                {% for u in search_results %}
+                    <a href="{% url 'chat:start_pv' u.username %}" class="chat-card" style="background:#e8f5e9;">
+                        <span>👤 <b>{{ u.username }}</b></span>
+                        <span style="color:#2e7d32; font-size:12px;">شروع چت خصوصی ←</span>
+                    </a>
+                {% endfor %}
+            </div>
+        {% endif %}
+    </div>
+
+    <div class="group-area">
+        <form method="post" class="input-grp">
+            {% csrf_token %}
+            <input type="text" name="group_name" placeholder="👥 نام گروه جدید..." required>
+            <button type="submit" name="create_group" style="background:#28a745;">ایجاد گروه</button>
+        </form>
+    </div>
+
+    <div class="chat-list-container">
+        <div class="section-title">گفتگوهای شما</div>
+        {% for r in rooms %}
+            <div class="chat-card">
+                <a href="{% url 'chat:room' r.obj.name %}" style="text-decoration:none; color:inherit; flex:1; display:flex; align-items:center;">
+                    <div class="card-main">
+                        <img src="{{ r.avatar }}" alt="avatar">
+                        <div>
+                            <strong>{{ r.title }}</strong>
+                            <div style="margin-top:2px;"><span class="badge">{{ r.type }}</span></div>
+                        </div>
+                    </div>
+                </a>
+                <a href="{% url 'chat:delete_chat' r.obj.name %}" class="del-btn" onclick="return confirm('کل چت حذف شود؟')">حذف</a>
+            </div>
+        {% empty %}
+            <p style="text-align:center; color:#aaa; font-size:13px; margin-top:30px;">چتی یافت نشد. آیدی کاربری را سرچ کنید.</p>
+        {% endfor %}
+    </div>
+</div>
+
+</body>
+</html>
